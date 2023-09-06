@@ -88,4 +88,63 @@ myapp.get("/movies/:movieId/", async (request, response) => {
   );
 });
 
+myapp.put("/movies/:movieId/", async (request, response) => {
+  const { movieId } = request.params;
+  const updateMovieDetails = request.body;
+  const { directorId, movieName, leadActor } = updateMovieDetails;
+  const updateMovieDetailsQuery = `
+    UPDATE movie
+    SET 
+    director_id=${directorId},
+    movie_name='${movieName}',
+    lead_actor='${leadActor}'
+    WHERE movie_id=${movieId};
+
+    `;
+  await data.run(updateMovieDetailsQuery);
+  response.send("Movie Details Updated");
+});
+
+myapp.delete("/movies/:movieId/", async (request, response) => {
+  const { movieId } = request.params;
+  const deleteMovieQuery = `
+    DELETE FROM movie
+    WHERE movie_id=${movieId} 
+    `;
+  await data.run(deleteMovieQuery);
+  response.send("Movie Removed");
+});
+
+const convertDbdirectorToresponseDirector = (dbObject) => {
+  return {
+    directorId: dbObject.director_id,
+    directorName: dbObject.director_name,
+  };
+};
+
+myapp.get("/directors/", async (request, response) => {
+  const displayDirectorQuery = `
+    SELECT * FROM director
+    `;
+  const displayDirectorsArray = await data.all(displayDirectorQuery);
+  response.send(
+    displayDirectorsArray.map((eachDirector) =>
+      convertDbdirectorToresponseDirector(eachDirector)
+    )
+  );
+
+  console.log(displayDirectorsArray);
+});
+
+myapp.get("/directors/:directorId/movies/", async (request, response) => {
+  const { directorId } = request.params;
+  const displayDirectorQuery = `
+    SELECT movie_name FROM movie NATURAL JOIN director;
+    WHERE director_id=${directorId};
+    `;
+  const displayDirector = await data.get(displayDirectorQuery);
+  response.send(displayDirector);
+  console.log(displayDirector);
+});
+
 module.exports = myapp;
